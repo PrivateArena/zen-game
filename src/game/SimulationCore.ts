@@ -1,4 +1,4 @@
-import type { GameState, Unit, GameConfig, EntityConfig, DuoduoHook } from '../types/game';
+import type { GameState, Unit, GameConfig, EntityConfig, DuoduoHook, Point2D } from '../types/game';
 
 // Standard layout computation functions
 export type LayoutFn = (entity: EntityConfig, index: number) => { x: number; y: number };
@@ -14,13 +14,16 @@ export const LayoutRegistry: Record<string, LayoutFn> = {
       x: box.x + Math.random() * box.w,
       y: box.y + Math.random() * box.h,
     };
-  }
+  },
+  'fixed': (entity) => ({
+    x: entity.layout.startX ?? 100,
+    y: entity.layout.startY ?? 100,
+  })
 };
-
 
 // Extensible Behavior Strategy pattern
 export interface BehaviorStrategy {
-  execute(unit: Unit, state: GameState, dt: number): void;
+  execute(unit: Unit, state: GameState, dt: number, waypoints?: Point2D[]): void;
 }
 
 export class AggressiveSeekStrategy implements BehaviorStrategy {
@@ -29,7 +32,7 @@ export class AggressiveSeekStrategy implements BehaviorStrategy {
     let minDistance = Infinity;
 
     for (const other of state.units) {
-      if (other.factionId !== unit.factionId && other.hp > 0) {
+      if (other.factionId !== unit.factionId && other.hp > 0 && other.behavior !== 'empty_slot') {
         const dx = other.x - unit.x;
         const dy = other.y - unit.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -46,12 +49,10 @@ export class AggressiveSeekStrategy implements BehaviorStrategy {
       const dy = closestEnemy.y - unit.y;
 
       if (minDistance > unit.range) {
-        // Move towards enemy
         unit.x += (dx / minDistance) * unit.speed * dt;
         unit.y += (dy / minDistance) * unit.speed * dt;
         unit.statusText = `Moving to attack ${closestEnemy.id}`;
       } else {
-        // Engaged in combat
         const damageApplied = unit.damage * dt;
         closestEnemy.hp = Math.max(0, closestEnemy.hp - damageApplied);
         unit.statusText = `Engaging ${closestEnemy.id}`;
@@ -69,7 +70,7 @@ export class PhalanxHoldStrategy implements BehaviorStrategy {
     let minDistance = Infinity;
 
     for (const other of state.units) {
-      if (other.factionId !== unit.factionId && other.hp > 0) {
+      if (other.factionId !== unit.factionId && other.hp > 0 && other.behavior !== 'empty_slot') {
         const dx = other.x - unit.x;
         const dy = other.y - unit.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -87,18 +88,15 @@ export class PhalanxHoldStrategy implements BehaviorStrategy {
 
       if (minDistance > unit.range) {
         if (minDistance < unit.range * 1.8) {
-          // Slow brace advance
           unit.x += (dx / minDistance) * (unit.speed * 0.4) * dt;
           unit.y += (dy / minDistance) * (unit.speed * 0.4) * dt;
           unit.statusText = 'Bracing defensive formation';
         } else {
-          // Normal speed advance
           unit.x += (dx / minDistance) * unit.speed * dt;
           unit.y += (dy / minDistance) * unit.speed * dt;
           unit.statusText = 'Advancing in phalanx';
         }
       } else {
-        // Lock shield and engage
         const damageApplied = unit.damage * dt;
         closestEnemy.hp = Math.max(0, closestEnemy.hp - damageApplied);
         unit.statusText = 'Phalanx locked; engaging';
@@ -110,12 +108,148 @@ export class PhalanxHoldStrategy implements BehaviorStrategy {
   }
 }
 
+// Tower Defense: Empty Slot Behavior
+export class EmptySlotStrategy implements BehaviorStrategy {
+  execute(unit: Unit): void {
+    unit.statusText = 'Empty Slot';
+    unit.targetId = undefined;
+  }
+}
+
+// Tower Defense: Tower Attack Logic
+export class TowerAttackStrategy implements BehaviorStrategy {
+  execute(unit: Unit, state: GameState, dt: number): void {
+    let closestEnemy: Unit | null = null;
+    let minDistance = Infinity;
+
+    for (const other of state.units) {
+      if (other.factionId !== unit.factionId && other.hp > 0) {
+        const isFly = other.id.includes('Harpy');
+        
+        // Ground and Bombard towers cannot target flyers
+        if (unit.id.includes('Ground') && isFly) continue;
+        if (unit.id.includes('Bombard') && isFly) continue;
+
+        const dx = other.x - unit.x;
+        const dy = other.y - unit.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist < minDistance) {
+          minDistance = dist;
+          closestEnemy = other;
+        }
+      }
+    }
+
+    if (closestEnemy && minDistance <= unit.range) {
+      unit.targetId = closestEnemy.id;
+
+      let damageMultiplier = 1.0;
+      const isArmor = closestEnemy.id.includes('Minotaur');
+
+      if (unit.id.includes('AntiArmor') && isArmor) {
+        damageMultiplier = 2.0;
+      }
+      if (unit.id.includes('Laser')) {
+        damageMultiplier = 0.5; // Weaker generalist
+      }
+      if (unit.id.includes('Bombard')) {
+        damageMultiplier = 0.5; // Weaker base damage, compensated by AOE
+      }
+
+      const damageApplied = unit.damage * damageMultiplier * dt;
+      closestEnemy.hp = Math.max(0, closestEnemy.hp - damageApplied);
+      unit.statusText = `Firing at ${closestEnemy.id.split('-').pop()}`;
+
+      // Apply Slow aura effect
+      if (unit.id.includes('Slow')) {
+        closestEnemy.statusText = 'Chilled (Slowed)';
+        (closestEnemy as any).isSlowed = true;
+      }
+
+      // Bombard splash damage to nearby ground enemies
+      if (unit.id.includes('Bombard')) {
+        const splashRadius = 80;
+        for (const other of state.units) {
+          if (other.factionId !== unit.factionId && other.hp > 0 && other.id !== closestEnemy.id) {
+            const isOtherFly = other.id.includes('Harpy');
+            if (isOtherFly) continue; // Splash doesn't hit flying units
+            
+            const sx = other.x - closestEnemy.x;
+            const sy = other.y - closestEnemy.y;
+            const sdist = Math.sqrt(sx * sx + sy * sy);
+            if (sdist <= splashRadius) {
+              other.hp = Math.max(0, other.hp - damageApplied * 0.5);
+            }
+          }
+        }
+      }
+
+      if (closestEnemy.hp <= 0) {
+        state.logs.unshift(`[COMBAT] Tower neutralized ${closestEnemy.id}!`);
+      }
+    } else {
+      unit.targetId = undefined;
+      unit.statusText = 'Scanning path...';
+    }
+  }
+}
+
+// Tower Defense: Enemy Path Advancement along Waypoints
+export class EnemyPathStrategy implements BehaviorStrategy {
+  execute(unit: Unit, state: GameState, dt: number, waypoints?: Point2D[]): void {
+    if (!waypoints || waypoints.length === 0) return;
+
+    const baseSpeed = unit.speed;
+    let currentSpeed = baseSpeed;
+
+    if ((unit as any).isSlowed) {
+      currentSpeed = baseSpeed * 0.4;
+      (unit as any).isSlowed = false; // Reset for next tick evaluation
+    }
+
+    if (unit.currentWaypointIndex === undefined) {
+      unit.currentWaypointIndex = 0;
+    }
+
+    const targetNode = waypoints[unit.currentWaypointIndex];
+    const dx = targetNode.x - unit.x;
+    const dy = targetNode.y - unit.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    const step = currentSpeed * dt;
+
+    if (dist <= step) {
+      unit.x = targetNode.x;
+      unit.y = targetNode.y;
+
+      if (unit.currentWaypointIndex < waypoints.length - 1) {
+        unit.currentWaypointIndex++;
+      } else {
+        // Reached the Rome base! Leak lives
+        unit.hp = 0;
+        state.lives = Math.max(0, state.lives - 1);
+        state.logs.unshift(`[BASE] Rome's defense breached by ${unit.id.split('-').pop()}!`);
+      }
+    } else {
+      unit.x += (dx / dist) * step;
+      unit.y += (dy / dist) * step;
+      if (unit.statusText !== 'Chilled (Slowed)') {
+        unit.statusText = 'Marching on Rome';
+      }
+    }
+  }
+}
+
 export class BehaviorRegistry {
   private strategies = new Map<string, BehaviorStrategy>();
 
   constructor() {
     this.register('aggressive_seek', new AggressiveSeekStrategy());
     this.register('phalanx_hold', new PhalanxHoldStrategy());
+    this.register('empty_slot', new EmptySlotStrategy());
+    this.register('tower_attack', new TowerAttackStrategy());
+    this.register('enemy_path', new EnemyPathStrategy());
   }
 
   register(key: string, strategy: BehaviorStrategy) {
@@ -125,7 +259,6 @@ export class BehaviorRegistry {
   get(key: string): BehaviorStrategy {
     const s = this.strategies.get(key);
     if (!s) {
-      // Fallback strategy if not found
       return this.strategies.get('aggressive_seek')!;
     }
     return s;
@@ -138,42 +271,140 @@ export interface InterceptDetail {
   resume: (result: { success: boolean }) => void;
 }
 
-// Fallback configuration matching original layout for backward compatibility
+// Mythic Roman Tower Defense config
 const DEFAULT_CONFIG: GameConfig = {
-  gameId: 'default-battle',
-  title: 'ZEN_MATRIX // CORE_SIM',
+  gameId: 'rome-aegis',
+  title: 'ROME_AEGIS // MYTHIC_LIMES',
   viewport: { width: 800, height: 450, theme: 'cyber-grid' },
   factions: {
-    red: { id: 'red', name: 'RED ALLIANCE', color: '#ef4444', spriteStyle: 'diamond' },
-    blue: { id: 'blue', name: 'BLUE SENTINELS', color: '#3b82f6', spriteStyle: 'shield' }
+    towers: { id: 'towers', name: 'ROMAN DEFENDERS', color: '#3b82f6', spriteStyle: 'shield' },
+    monsters: { id: 'monsters', name: 'MYTHIC HORDE', color: '#ef4444', spriteStyle: 'diamond' }
   },
+  // S-Curve path for enemies to walk
+  waypoints: [
+    { x: 760, y: 225 },
+    { x: 600, y: 100 },
+    { x: 440, y: 350 },
+    { x: 280, y: 100 },
+    { x: 120, y: 350 },
+    { x: 50,  y: 225 }
+  ],
   entities: [
+    // Pre-placed Built Towers (starting arsenal)
     {
-      id: 'Red-Vanguard',
-      faction: 'red',
-      count: 5,
-      layout: { type: 'vertical-line', startX: 150, startY: 100, spacing: 65 },
-      stats: { hp: 100, damage: 25, speed: 70, range: 50 },
-      behavior: 'aggressive_seek'
+      id: 'Ground-Castrum',
+      faction: 'towers',
+      count: 1,
+      layout: { type: 'fixed', startX: 680, startY: 140 },
+      stats: { hp: 500, damage: 65, speed: 0, range: 100 },
+      behavior: 'tower_attack'
     },
     {
-      id: 'Blue-Sentinel',
-      faction: 'blue',
+      id: 'Fly-Sagittarius',
+      faction: 'towers',
+      count: 1,
+      layout: { type: 'fixed', startX: 420, startY: 180 },
+      stats: { hp: 500, damage: 45, speed: 0, range: 150 },
+      behavior: 'tower_attack'
+    },
+    // Empty Plot slots where player can build towers!
+    {
+      id: 'Slot-Plot-1',
+      faction: 'towers',
+      count: 1,
+      layout: { type: 'fixed', startX: 600, startY: 220 },
+      stats: { hp: 500, damage: 0, speed: 0, range: 0 },
+      behavior: 'empty_slot'
+    },
+    {
+      id: 'Slot-Plot-2',
+      faction: 'towers',
+      count: 1,
+      layout: { type: 'fixed', startX: 500, startY: 100 },
+      stats: { hp: 500, damage: 0, speed: 0, range: 0 },
+      behavior: 'empty_slot'
+    },
+    {
+      id: 'Slot-Plot-3',
+      faction: 'towers',
+      count: 1,
+      layout: { type: 'fixed', startX: 340, startY: 280 },
+      stats: { hp: 500, damage: 0, speed: 0, range: 0 },
+      behavior: 'empty_slot'
+    },
+    {
+      id: 'Slot-Plot-4',
+      faction: 'towers',
+      count: 1,
+      layout: { type: 'fixed', startX: 200, startY: 200 },
+      stats: { hp: 500, damage: 0, speed: 0, range: 0 },
+      behavior: 'empty_slot'
+    },
+    {
+      id: 'Slot-Plot-5',
+      faction: 'towers',
+      count: 1,
+      layout: { type: 'fixed', startX: 100, startY: 100 },
+      stats: { hp: 500, damage: 0, speed: 0, range: 0 },
+      behavior: 'empty_slot'
+    },
+
+    // Invading Mythological Enemies
+    {
+      id: 'Satyr-Skirmisher',
+      faction: 'monsters',
       count: 5,
-      layout: { type: 'vertical-line', startX: 650, startY: 100, spacing: 65 },
-      stats: { hp: 120, damage: 20, speed: 55, range: 50 },
-      behavior: 'phalanx_hold'
+      layout: { type: 'vertical-line', startX: 780, startY: 190, spacing: 25 },
+      stats: { hp: 120, damage: 10, speed: 60, range: 0 },
+      behavior: 'enemy_path',
+      goldReward: 20
+    },
+    {
+      id: 'Harpy-Scavenger',
+      faction: 'monsters',
+      count: 3,
+      layout: { type: 'vertical-line', startX: 860, startY: 200, spacing: 25 },
+      stats: { hp: 80, damage: 8, speed: 85, range: 0 },
+      behavior: 'enemy_path',
+      goldReward: 25
+    },
+    {
+      id: 'Minotaur-Vanguard',
+      faction: 'monsters',
+      count: 2,
+      layout: { type: 'vertical-line', startX: 920, startY: 210, spacing: 40 },
+      stats: { hp: 200, damage: 25, speed: 38, range: 0 },
+      behavior: 'enemy_path',
+      goldReward: 45
+    },
+    {
+      id: 'Cerberus-Pup',
+      faction: 'monsters',
+      count: 4,
+      layout: { type: 'vertical-line', startX: 980, startY: 190, spacing: 20 },
+      stats: { hp: 70, damage: 5, speed: 110, range: 0 },
+      behavior: 'enemy_path',
+      goldReward: 15
+    },
+    {
+      id: 'Chimera-Boss',
+      faction: 'monsters',
+      count: 1,
+      layout: { type: 'fixed', startX: 1060, startY: 225 },
+      stats: { hp: 750, damage: 50, speed: 28, range: 0 },
+      behavior: 'enemy_path',
+      goldReward: 150
     }
   ],
   timelineEvents: [
     {
-      id: 'combat_midpoint_quiz',
-      trigger: { type: 'faction_hp_percent', faction: 'blue', value: 50 },
+      id: 'defenses_midpoint_quiz',
+      trigger: { type: 'faction_hp_percent', faction: 'monsters', value: 50 },
       duoduoHook: {
         type: 'quiz_challenge',
-        quizId: 'intro_history_01',
-        onSuccess: { action: 'buff_faction', faction: 'red', stat: 'damage', multiplier: 1.5 },
-        onFailure: { action: 'buff_faction', faction: 'blue', stat: 'speed', multiplier: 1.2 }
+        quizId: 'marathon_tactics_01',
+        onSuccess: { action: 'buff_faction', faction: 'towers', stat: 'damage', multiplier: 1.5 },
+        onFailure: { action: 'buff_faction', faction: 'monsters', stat: 'speed', multiplier: 1.2 }
       }
     }
   ]
@@ -203,8 +434,11 @@ export class SimulationCore {
       units: [],
       simulationSpeed: 1,
       elapsedTime: 0,
-      logs: [`Simulation initialized: ${config.title}`],
-      firedEventIds: []
+      logs: [`Limes Grid: ${config.title} online.`],
+      firedEventIds: [],
+      gold: 300, // Starting gold
+      lives: 20, // Starting lives
+      selectedSlotId: null
     };
     this.spawnUnits();
   }
@@ -212,7 +446,7 @@ export class SimulationCore {
   private spawnUnits() {
     const units: Unit[] = [];
     for (const group of this.config.entities) {
-      const layoutFn = LayoutRegistry[group.layout.type] ?? LayoutRegistry['vertical-line'];
+      const layoutFn = LayoutRegistry[group.layout.type] ?? LayoutRegistry['fixed'];
       for (let i = 0; i < group.count; i++) {
         const pos = layoutFn(group, i);
         units.push({
@@ -226,11 +460,48 @@ export class SimulationCore {
           speed: group.stats.speed,
           range: group.stats.range,
           behavior: group.behavior,
-          statusText: 'Standing ready'
+          statusText: 'Standing ready',
+          goldReward: group.goldReward,
+          currentWaypointIndex: 0
         });
       }
     }
     this.state.units = units;
+  }
+
+  public selectSlot(slotId: string | null) {
+    this.state.selectedSlotId = slotId;
+    this.notify();
+  }
+
+  public purchaseTower(slotId: string, towerType: string, cost: number) {
+    const unit = this.state.units.find(u => u.id === slotId);
+    if (unit && unit.behavior === 'empty_slot' && this.state.gold >= cost) {
+      this.state.gold -= cost;
+      
+      // Upgrade settings based on type
+      let damage = 50;
+      let range = 120;
+      if (towerType === 'Ground') { damage = 65; range = 100; }
+      else if (towerType === 'Fly') { damage = 45; range = 150; }
+      else if (towerType === 'Laser') { damage = 35; range = 125; }
+      else if (towerType === 'Bombard') { damage = 55; range = 140; }
+      else if (towerType === 'AntiArmor') { damage = 60; range = 170; }
+      else if (towerType === 'Slow') { damage = 5; range = 130; }
+
+      // Mutate existing slot unit into a functioning tower
+      unit.id = `${towerType}-${unit.id}`; // Add type to ID so rendering/behaviors recognize it
+      unit.behavior = 'tower_attack';
+      unit.damage = damage;
+      unit.range = range;
+      unit.statusText = `${towerType} Online`;
+
+      this.state.selectedSlotId = null;
+      this.addLog(`[ECONOMY] Built ${towerType} Tower for ${cost}g.`);
+      this.notify();
+      return true;
+    }
+    return false;
   }
 
   public subscribe(listener: (state: GameState) => void) {
@@ -253,14 +524,17 @@ export class SimulationCore {
       simulationSpeed: this.state.simulationSpeed,
       elapsedTime: this.state.elapsedTime,
       logs: [...this.state.logs],
-      firedEventIds: [...this.state.firedEventIds]
+      firedEventIds: [...this.state.firedEventIds],
+      gold: this.state.gold,
+      lives: this.state.lives,
+      selectedSlotId: this.state.selectedSlotId
     };
   }
 
   public start() {
     if (this.state.status === 'running') return;
     this.state.status = 'running';
-    this.addLog('Simulation started.');
+    this.addLog('Defense network activated.');
     this.lastUpdateTime = performance.now();
     this.runLoop();
     this.notify();
@@ -269,7 +543,7 @@ export class SimulationCore {
   public pause() {
     if (this.state.status !== 'running') return;
     this.state.status = 'paused';
-    this.addLog('Simulation paused.');
+    this.addLog('Defense network suspended.');
     if (this.intervalId) {
       cancelAnimationFrame(this.intervalId);
       this.intervalId = null;
@@ -281,15 +555,18 @@ export class SimulationCore {
     this.pause();
     this.state.status = 'idle';
     this.state.elapsedTime = 0;
-    this.state.logs = ['Simulation reset.'];
+    this.state.logs = ['Defense system reset.'];
     this.state.firedEventIds = [];
+    this.state.gold = 300;
+    this.state.lives = 20;
+    this.state.selectedSlotId = null;
     this.spawnUnits();
     this.notify();
   }
 
   public setSpeed(speed: number) {
     this.state.simulationSpeed = speed;
-    this.addLog(`Simulation speed set to ${speed}x.`);
+    this.addLog(`Time dilation set to ${speed}x.`);
     this.notify();
   }
 
@@ -299,20 +576,19 @@ export class SimulationCore {
 
   private triggerIntercept(eventId: string, hook: DuoduoHook) {
     this.state.status = 'awaiting-interaction';
-    this.addLog(`[INTERCEPT] Halting for education: ${eventId}`);
+    this.addLog(`[INTERCEPT] Educational objective active: ${eventId}`);
     if (this.intervalId) {
       cancelAnimationFrame(this.intervalId);
       this.intervalId = null;
     }
     this.notify();
 
-    // Trigger local callback for headless/direct support
     const callbackDetail: InterceptDetail = {
       eventId,
       hook,
       resume: (result) => {
         this.applyRewardOrPenalty(result, hook);
-        this.addLog(`[INTERCEPT] Resuming simulation.`);
+        this.addLog(`[INTERCEPT] Gate sequence resolved.`);
         this.state.status = 'running';
         this.lastUpdateTime = performance.now();
         this.runLoop();
@@ -322,7 +598,6 @@ export class SimulationCore {
     if (this.interceptHandler) {
       this.interceptHandler(callbackDetail);
     } else {
-      // Fallback to window event for standard browser setup
       window.dispatchEvent(new CustomEvent('zen-game-intercept', {
         detail: callbackDetail
       }));
@@ -339,21 +614,21 @@ export class SimulationCore {
         .forEach(u => {
           if (outcome.stat === 'damage') {
             u.damage *= outcome.multiplier;
-            this.addLog(`[BUFF] Faction ${outcome.faction} damage buffed by ${outcome.multiplier}x.`);
+            this.addLog(`[BUFF] ${outcome.faction} weapon damage boosted ${outcome.multiplier}x!`);
           }
           if (outcome.stat === 'speed') {
             u.speed *= outcome.multiplier;
-            this.addLog(`[BUFF] Faction ${outcome.faction} speed buffed by ${outcome.multiplier}x.`);
+            this.addLog(`[DEBUFF] ${outcome.faction} movement rate accelerated ${outcome.multiplier}x!`);
           }
         });
     }
   }
 
   public triggerDiagnosticPulse() {
-    this.addLog('[DIAGNOSTIC] Manual diagnostic pulse triggered. Re-aligning unit sensors.');
+    this.addLog('[DIAGNOSTIC] Vulcanite crystal discharge. Re-energizing static defenses.');
     for (const unit of this.state.units) {
-      if (unit.hp > 0 && unit.hp < unit.maxHp) {
-        unit.hp = Math.min(unit.maxHp, unit.hp + 10);
+      if (unit.factionId === 'towers' && unit.behavior !== 'empty_slot') {
+        unit.range = Math.min(250, unit.range + 10);
       }
     }
     this.notify();
@@ -388,14 +663,20 @@ export class SimulationCore {
     // Process unit behaviors from registry
     for (const unit of units) {
       if (unit.hp <= 0) {
-        unit.statusText = 'Fallen';
+        if (unit.goldReward && unit.goldReward > 0) {
+          // Award gold once
+          this.state.gold += unit.goldReward;
+          this.addLog(`[ECONOMY] Earned +${unit.goldReward}g from defeating ${unit.id.split('-')[0]}`);
+          unit.goldReward = 0; // prevent double claim
+        }
+        unit.statusText = 'Decommissioned';
         continue;
       }
       const strategy = this.behaviorRegistry.get(unit.behavior);
-      strategy.execute(unit, this.state, dt);
+      strategy.execute(unit, this.state, dt, this.config.waypoints);
     }
 
-    // Evaluate timeline trigger events
+    // Evaluate timeline triggers
     this.evaluateTimelineEvents();
 
     // Check game over
@@ -436,15 +717,13 @@ export class SimulationCore {
       }
     }
 
-    if (activeFactions.size === 0) {
+    if (this.state.lives <= 0) {
       this.state.status = 'gameover';
-      this.addLog('Simulation Over: All factions eliminated.');
+      this.addLog('Simulation Terminated: Rome has fallen.');
       this.pause();
-    } else if (activeFactions.size === 1) {
-      const winner = Array.from(activeFactions)[0];
-      const name = this.config.factions[winner]?.name || winner;
+    } else if (!activeFactions.has('monsters')) {
       this.state.status = 'gameover';
-      this.addLog(`Simulation Over: ${name} Wins!`);
+      this.addLog('Simulation Terminated: Threat neutralized. ROME STANDS!');
       this.pause();
     }
   }

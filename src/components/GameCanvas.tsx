@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import Phaser from 'phaser';
 import { SimulationCore } from '../game/SimulationCore';
 import { MainScene } from '../game/MainScene';
 

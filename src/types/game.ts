@@ -1,5 +1,10 @@
 export type GameStatus = 'idle' | 'running' | 'paused' | 'awaiting-interaction' | 'gameover';
 
+export interface Point2D {
+  x: number;
+  y: number;
+}
+
 export interface Unit {
   id: string;
   factionId: string;
@@ -13,17 +18,19 @@ export interface Unit {
   behavior: string; // Key in BehaviorRegistry
   targetId?: string;
   statusText?: string;
+  currentWaypointIndex?: number; // TD specific enemy pathing
+  goldReward?: number; // TD gold dropped on death
 }
 
 export interface FactionConfig {
   id: string;
   name: string;
   color: string; // Hex string (e.g. "#3388ff")
-  spriteStyle: string; // "shield" | "diamond"
+  spriteStyle: string; // "shield" | "diamond" | "circle" | "ring"
 }
 
 export interface LayoutConfig {
-  type: 'vertical-line' | 'scatter' | string;
+  type: 'vertical-line' | 'scatter' | 'fixed' | string;
   startX?: number;
   startY?: number;
   spacing?: number;
@@ -42,6 +49,7 @@ export interface EntityConfig {
     range: number;
   };
   behavior: string;
+  goldReward?: number;
 }
 
 export interface TriggerConfig {
@@ -71,6 +79,7 @@ export interface GameConfig {
   factions: Record<string, FactionConfig>;
   entities: EntityConfig[];
   timelineEvents: TimelineEvent[];
+  waypoints: Point2D[]; // Path for enemies to walk
 }
 
 export interface GameState {
@@ -80,4 +89,7 @@ export interface GameState {
   elapsedTime: number;
   logs: string[];
   firedEventIds: string[];
+  gold: number;
+  lives: number;
+  selectedSlotId: string | null;
 }
