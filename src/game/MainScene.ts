@@ -104,8 +104,10 @@ export class MainScene extends Phaser.Scene {
     }).setAlpha(0.6);
 
     // Clicking empty space deselects build slots
-    this.input.on('pointerdown', () => {
-      this.simulationCore.selectSlot(null);
+    this.input.on('pointerdown', (_pointer: Phaser.Input.Pointer, currentlyOver: any[]) => {
+      if (currentlyOver.length === 0) {
+        this.simulationCore.selectSlot(null);
+      }
     });
   }
 
@@ -248,9 +250,9 @@ export class MainScene extends Phaser.Scene {
 
     const container = this.add.container(unit.x, unit.y, [sprite, shadow, nameTag, rangeIndicator]);
     
-    // Make unit sprite interactive to ensure reliable hitbox capture in Phaser
-    sprite.setInteractive({ useHandCursor: true });
-    sprite.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
+    // Make container interactive with an explicit hit area shape centered on the slot/unit sprite
+    container.setInteractive(new Phaser.Geom.Circle(0, -8, 16), Phaser.Geom.Circle.Contains);
+    container.on('pointerdown', (pointer: Phaser.Input.Pointer) => {
       pointer.event.stopPropagation();
       this.simulationCore.selectSlot(unit.id);
     });

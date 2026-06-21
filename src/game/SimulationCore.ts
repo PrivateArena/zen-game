@@ -440,6 +440,7 @@ export class SimulationCore {
       lives: 20, // Starting lives
       selectedSlotId: null
     };
+    (window as any).simulationCore = this;
     this.spawnUnits();
   }
 

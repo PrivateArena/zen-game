@@ -27,6 +27,8 @@ function App() {
   } | null>(null);
 
   useEffect(() => {
+    (window as any).simulationCore = simulationCore;
+
     const unsubscribe = simulationCore.subscribe((nextState) => {
       setGameState(nextState);
     });
