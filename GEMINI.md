@@ -104,3 +104,111 @@ curl -s -X POST http://localhost:5055/tts \
   }' \
   -o shield_warning.wav
 ```
+
+---
+
+## 🚀 3. Reusable Engine Quick-Start Guide (Spamming New Games)
+
+To quickly build or "spam" a new game using the engine, you don't need to touch the core code in `src/engine/`. You only need to define a new configuration, behavior strategies, and actions.
+
+### Step 1: Create a Config File (`src/games/my-new-game/config.ts`)
+Define your initial global stats, unit templates, entities, and waypoints:
+```typescript
+import type { GameConfig } from '../../engine/types';
+
+export const MyNewGameConfig: GameConfig = {
+  gameId: 'space-battle',
+  title: 'ORBITAL_DEFENSE // STATION_AEGIS',
+  viewport: { width: 800, height: 450, theme: 'space-dark' },
+  factions: {
+    drones: { id: 'drones', name: 'ALLY DRONES', color: '#10b981', spriteStyle: 'shield' },
+    aliens: { id: 'aliens', name: 'INVADERS', color: '#f59e0b', spriteStyle: 'diamond' }
+  },
+  waypoints: [
+    { x: 100, y: 100 },
+    { x: 700, y: 350 }
+  ],
+  initialGlobalStats: {
+    energy: 500,
+    hull: 100
+  },
+  entityTemplates: {
+    interceptor: {
+      tags: ['defense', 'ship'],
+      baseStats: { hp: 150, damage: 20, speed: 100, range: 200 },
+      behavior: 'seek_and_destroy'
+    }
+  },
+  initialEntities: [
+    {
+      template: 'interceptor',
+      count: 2,
+      factionId: 'drones',
+      layout: { type: 'fixed', startX: 150, startY: 200 }
+    }
+  ],
+  timelineEvents: []
+};
+```
+
+### Step 2: Implement Custom Behaviors & Actions (`src/games/my-new-game/behaviors.ts`)
+Write custom, stateless strategy algorithms:
+```typescript
+import type { BehaviorStrategy, ActionHandler, ActionDefinition } from '../../engine/types';
+
+// Custom behavior strategy
+export const SeekAndDestroyStrategy: BehaviorStrategy = (unit, context, dt) => {
+  // Select and fire at closest alien creep...
+  unit.statusText = "Engaging alien fleet";
+};
+
+// Custom command action definition
+export const DEPLOY_DRONE_DEF: ActionDefinition = {
+  type: 'DEPLOY_DRONE',
+  description: 'Deploy interceptor to the battlefield.',
+  schema: { x: 'number', y: 'number', cost: 'number' }
+};
+
+// Custom action execution
+export const DeployDroneAction: ActionHandler = (payload, context) => {
+  const { x, y, cost } = payload;
+  if (context.globalStats.energy >= cost) {
+    context.globalStats.energy -= cost;
+    const id = `interceptor-${Date.now()}`;
+    context.entities.set(id, {
+      id,
+      type: 'interceptor',
+      factionId: 'drones',
+      x, y,
+      hp: 150, maxHp: 150,
+      damage: 20, speed: 100, range: 200,
+      behavior: 'seek_and_destroy',
+      tags: ['defense', 'ship'],
+      stats: { hp: 150, damage: 20, speed: 100, range: 200 },
+      components: {}
+    });
+    return true;
+  }
+  return false;
+};
+```
+
+### Step 3: Bootstrap and Run
+Combine configuration, strategies, and actions inside your app setup:
+```typescript
+import { CoreEngine } from '../../engine/CoreEngine';
+import { BehaviorRegistry } from '../../engine/BehaviorRegistry';
+import { MyNewGameConfig } from './config';
+import { SeekAndDestroyStrategy, DeployDroneAction, DEPLOY_DRONE_DEF } from './behaviors';
+
+const registry = new BehaviorRegistry();
+// Register strategies
+registry.registerStrategy('seek_and_destroy', SeekAndDestroyStrategy);
+// Register command actions
+registry.registerAction('DEPLOY_DRONE', DeployDroneAction, DEPLOY_DRONE_DEF);
+
+// Spin up engine
+const engine = new CoreEngine(MyNewGameConfig, registry);
+engine.start();
+```
+

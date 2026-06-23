@@ -4,14 +4,14 @@ import { SimulationCore } from '../game/SimulationCore';
 import { MainScene } from '../game/MainScene';
 
 interface GameCanvasProps {
-  simulationCore: SimulationCore;
+  simulationCore: simulationCore;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({ simulationCore }) => {
   const gameRef = useRef<Phaser.Game | null>(null);
 
   useEffect(() => {
-    // Standard Phaser 4 config structure
+    // Standard Phaser 4 config structure with preserveDrawingBuffer enabled for snapshots
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       width: 800,
@@ -24,6 +24,9 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ simulationCore }) => {
       scale: {
         mode: Phaser.Scale.FIT,
         autoCenter: Phaser.Scale.CENTER_BOTH
+      },
+      render: {
+        preserveDrawingBuffer: true
       },
       scene: [MainScene]
     };
