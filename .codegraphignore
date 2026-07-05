@@ -1,0 +1,6 @@
+*_test.go
+.zenmcp/
+eslint.config.js
+postcss.config.js
+tailwind.config.js
+vite.config.ts

@@ -4,7 +4,7 @@ import { SimulationCore } from '../game/SimulationCore';
 import { MainScene } from '../game/MainScene';
 
 interface GameCanvasProps {
-  simulationCore: simulationCore;
+  simulationCore: SimulationCore;
 }
 
 export const GameCanvas: React.FC<GameCanvasProps> = ({ simulationCore }) => {
