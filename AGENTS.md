@@ -27,9 +27,13 @@ tactics code inside the legacy modules described at the end.
    - `skills/web-engines/phaser-tactical-grid/` — cells, grid/iso drawing, pointer→cell, highlights,
      board camera, depth order, path tweening. Its `references/grid-projection-and-picking.md` has the
      projection/inverse math and the picking checklist.
+   - `skills/web-engines/phaser-text-and-hud/` — TextStyle, BitmapText, panels/NineSlice, buttons,
+     tooltips, HUD camera. Phaser has **no widget toolkit**; build controls from the primitives there.
    - `skills/genres/turn-based-strategy/` — phase + action-point economy, reachability vs. pathfinding,
      cover/terrain, odds and RNG policy, enemy-phase AI, mission objectives, campaign layer. Its
      references cover combat rules and AI/objectives/campaign.
+   - `skills/disciplines/game-content-data/` — `src/content/` schemas, stable ids + reference checks,
+     effect registry, balance curves as parameters, content tests.
 4. **Add only the discipline the task names** (see the hand-off table below) — one genre, one engine
    set, plus at most the 2–3 disciplines actually needed.
 5. **Ground truth for Phaser names:** `node_modules/phaser/types/phaser.d.ts` and the official
@@ -48,8 +52,9 @@ tactics code inside the legacy modules described at the end.
 | phases, AP, ranges, forecast, cover, enemy phase, missions, campaign | `turn-based-strategy` | re-teach pathfinding or saving inside game code |
 | A\*, path cost, grid graph, enemy FSM/BT | `disciplines/game-ai` | hand-roll a second pathfinder |
 | unit stats, XP/level curve, gear, status effects | `disciplines/rpg` (`genres/rpg`) | store derived stats as truth |
+| item/unit/terrain/mission tables, ids, validation | `disciplines/game-content-data` | put behavior or display strings in the data |
 | mission maps, generated battlemaps | `disciplines/level-design` + `disciplines/procedural-gen` | generate without a connectivity + cover-density check |
-| HUD, panels, tooltips, menus, scaling, focus nav | `disciplines/game-ui-ux` | mix two UI stacks for one panel |
+| HUD, panels, tooltips, menus, scaling, focus nav | `disciplines/game-ui-ux` (design) + `phaser-text-and-hud` (Phaser API) | mix two UI stacks for one panel |
 | cursor/gamepad/d-pad selection, rebinds | `disciplines/input-systems` | mouse-only selection with no keyboard path |
 | attack staging, hit-stop, screen shake, juice | `disciplines/game-feel` | animate gameplay state |
 | battle/campaign saves, autosave, versioning | `disciplines/save-systems` | serialize GameObjects or tweens |

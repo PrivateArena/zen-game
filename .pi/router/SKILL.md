@@ -6,7 +6,7 @@ description: >
   reads the chosen skill before acting. Use to make a game or to decide which skill applies — for
   players, levels, enemies, shaders, art direction, sprites, tiles, textures, 3D assets, UI/UX,
   cameras, game feel, physics, input, audio, saving, multiplayer, AI, dialogue, procedural
-  generation, or performance, for genres (platformer,
+  generation, content/data schemas, HUD text and widgets, or performance, for genres (platformer,
   roguelike, RPG, FPS, tower-defense, card game, visual novel, survival-crafting, puzzle, turn-based
   strategy/SRPG), and for
   shipping (game jam, Steam, itch). Start here
@@ -80,10 +80,10 @@ After the engine, read the request for task signals (three **additive** categori
 
 - **disciplines** (cross-engine concepts): `create-game-assets`, `game-ai`, `ai-behavior-trees-utility-ai`, `procedural-gen`, `dialogue-systems`,
   `save-systems`, `audio-design`, `shader-programming`, `physics-tuning`, `level-design`,
-  `input-systems`, `game-feel`, `camera-systems`, `game-ui-ux`, `performance-optimization`.
-  Triggered by concept words ("sprite sheet", "art direction", "texture", "pathfinding",
-  "save slots", "fragment shader", "screen shake", "camera follow", "HUD/menu",
-  "optimize/low FPS").
+  `input-systems`, `game-feel`, `camera-systems`, `game-ui-ux`, `performance-optimization`,
+  `game-content-data`. Triggered by concept words ("sprite sheet", "art direction", "texture",
+  "pathfinding", "save slots", "fragment shader", "screen shake", "camera follow", "HUD/menu",
+  "text/tooltip", "data tables/content schema", "optimize/low FPS").
 - **genres** (whole-game templates): `platformer`, `roguelike`, `rpg`, `fps-shooter`,
   `tower-defense`, `card-game`, `visual-novel`, `survival-crafting`, `puzzle`,
   `turn-based-strategy`. Triggered by genre
@@ -114,8 +114,9 @@ File signals sharpen this: `*.yarn`/`*.ink` → `dialogue-systems`/`visual-novel
   input, rendering, text, audio, state/testing and build work. Select only its relevant
   references; generating the starter is optional for an existing project.
 - **Web** (`skills/web-engines/`): `phaser-core`, `phaser-arcade-physics`, `phaser-tactical-grid`
-  (cell/iso boards, tile picking, board camera); `pixijs-rendering`; `threejs-scene-setup`,
-  `threejs-gltf-loading`, `threejs-materials-lighting`.
+  (cell/iso boards, tile picking, board camera), `phaser-text-and-hud` (text, panels, buttons, HUD
+  camera); `pixijs-rendering`; `threejs-scene-setup`, `threejs-gltf-loading`,
+  `threejs-materials-lighting`.
 - **Other** (`skills/other-engines/`): `bevy-ecs`, `pygame-core`, `love2d-core`; Defold
   `defold-core` (collections, game objects, scripts, input, messages, factories, proxies,
   Bob builds); Roblox foundation
@@ -143,6 +144,8 @@ File signals sharpen this: `*.yarn`/`*.ink` → `dialogue-systems`/`visual-novel
 | camera follow, deadzone, look-ahead, orbit, first-person | `camera-systems` | `godot-2d-movement` / `godot-3d-essentials` / Cinemachine |
 | HUD, menu, UI layout, scaling, safe area, focus nav | `game-ui-ux` | `godot-ui-control` / Unity UI (UGUI/UI Toolkit) |
 | low FPS, optimize, draw calls, GC spike, pooling, profiler | `performance-optimization` | engine profiler + `physics-tuning` |
+| item/unit/enemy/mission tables, stat blocks, content schema, dangling refs, balance tables | `game-content-data` | `godot-resources` / `unity-scriptableobjects` / typed TS-JSON |
+| Phaser text, TextStyle, BitmapText, panel, tooltip, HUD camera, buttons | `phaser-text-and-hud` (+ `game-ui-ux` for the design) | `phaser-core` scenes + `phaser-tactical-grid` layers |
 
 For Roblox, compose cross-engine concepts with the focused engine skill: HUD/menu requests use
 `roblox-ui` + `game-ui-ux` (+ `input-systems` for gameplay bindings); remote exploit or
@@ -177,7 +180,7 @@ pointers, and state the gap.
 | visual novel, branching story | `dialogue-systems` + `save-systems` + `game-ui-ux` |
 | survival, crafting, gathering | `save-systems` + `godot-resources`/`unity-scriptableobjects` + `procedural-gen` + `game-ui-ux` |
 | puzzle, match-3, grid logic | `godot-tilemap`/`unity-tilemap-2d` + `level-design` + `game-feel` |
-| turn-based strategy, SRPG, grid tactics, XCOM/Fire Emblem-like | `phaser-tactical-grid`/`godot-tilemap`/`unity-tilemap-2d` + `game-ai` + `rpg` + `level-design` + `game-ui-ux` + `save-systems` |
+| turn-based strategy, SRPG, grid tactics, XCOM/Fire Emblem-like | `phaser-tactical-grid`/`godot-tilemap`/`unity-tilemap-2d` + `game-ai` + `rpg` + `game-content-data` + `level-design` + `game-ui-ux` (+ `phaser-text-and-hud` on web) + `save-systems` |
 
 ### 3d. Workflows — engine-independent process & shipping
 
@@ -260,6 +263,8 @@ and offer to load it if the user confirms.
 | "I want to make a game but don't know what to use" | unknown → ask, default Godot | router asks once; then e.g. `godot-nodes-scenes` |
 | "make hits feel punchy in my Godot game" | Godot (`project.godot`) | `game-feel` (+ `camera-systems` for shake) |
 | "XCOM-style tactics mission in Phaser" | Phaser (`package.json` dep `phaser`) | `phaser-tactical-grid` → `turn-based-strategy` (+ `game-ai` for the enemy phase) |
+| "add a forecast tooltip and end-turn button to my Phaser tactics game" | Phaser | `phaser-text-and-hud` (+ `game-ui-ux` for the layout rules) |
+| "make enemies/items/missions data-driven" | (any) | `game-content-data` → the engine data skill |
 | "the camera should follow my player smoothly" | (detected engine) | `camera-systems` (+ engine movement skill) |
 | "my Unity game drops to 30 FPS, optimize it" | Unity (`Assets/`+`ProjectSettings/`) | `performance-optimization` (profile first) → engine skill |
 | "make a cohesive pixel-art player and enemy set" | (detected engine) | `create-game-assets` → relevant engine import/rendering skill |

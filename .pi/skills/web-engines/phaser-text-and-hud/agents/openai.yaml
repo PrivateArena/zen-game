@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaser Text & HUD"
+  short_description: "Text, panels, buttons and HUD cameras in Phaser 4"
+  default_prompt: "Use $phaser-text-and-hud to build or fix the HUD, tooltips and menus in my Phaser game."

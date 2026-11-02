@@ -4,19 +4,19 @@
 
 <p align="center">
   <img src="docs/assets/awesome-gamedev-agent-skills-banner.png" width="820"
-       alt="awesome-gamedev-agent-skills — game-dev skills for AI coding agents. 79 skills and a router across 12 engines, including an art-direction and asset-production workflow.">
+       alt="awesome-gamedev-agent-skills — game-dev skills for AI coding agents. 81 skills and a router across 12 engines, including an art-direction and asset-production workflow.">
 </p>
 
-**79 game-dev skills for your AI coding agent — install once, and a router loads the
+**81 game-dev skills for your AI coding agent — install once, and a router loads the
 right skill for whatever you're building.**
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
-[![Skills](https://img.shields.io/badge/skills-79%20%2B%20router-brightgreen)](skills/)
+[![Skills](https://img.shields.io/badge/skills-81%20%2B%20router-brightgreen)](skills/)
 [![Format](https://img.shields.io/badge/format-Agent%20Skills-informational)](docs/SKILL-FORMAT.md)
 [![Last commit](https://img.shields.io/github/last-commit/gamedev-skills/awesome-gamedev-agent-skills)](https://github.com/gamedev-skills/awesome-gamedev-agent-skills/commits/main)
 
 [Agent Skills](docs/SKILL-FORMAT.md) are small capability files an AI agent loads only when it
-needs them. This repo gives your agent **79 game-dev skills** and a **router** that picks the
+needs them. This repo gives your agent **81 game-dev skills** and a **router** that picks the
 right ones for you. You describe what you're building; the agent loads the matching engine and
 task skills before it writes code.
 
@@ -40,7 +40,7 @@ task skills before it writes code.
 ## Quick start
 
 **One command, any agent.** The [`skills`](https://www.npmjs.com/package/skills) CLI detects the
-coding agent you already use and installs the router plus all 79 skills into the right place:
+coding agent you already use and installs the router plus all 81 skills into the right place:
 
 ```bash
 npx skills add gamedev-skills/awesome-gamedev-agent-skills
@@ -120,7 +120,7 @@ engine), while disciplines, genres, and workflows are additive on top.
 
 ## Catalog
 
-79 skills across 9 categories — each links to its `SKILL.md` below.
+81 skills across 9 categories — each links to its `SKILL.md` below.
 
 ### Engines
 
@@ -175,13 +175,14 @@ engine), while disciplines, genres, and workflows are additive on top.
 |-------|-------|
 | [`ebitengine-game`](skills/ebitengine/ebitengine-game/SKILL.md) | Playable Go 2D games: update/draw contracts, input, rendering, text, audio, gameplay tests, optional starter and platform builds |
 
-#### Web engines — 7 ([`skills/web-engines/`](skills/web-engines/)) · Phaser 4.2 · PixiJS 8.22 · three.js r186
+#### Web engines — 8 ([`skills/web-engines/`](skills/web-engines/)) · Phaser 4.2 · PixiJS 8.22 · three.js r186
 
 | Skill | Scope |
 |-------|-------|
 | [`phaser-core`](skills/web-engines/phaser-core/SKILL.md) | Phaser 4.2 game config, Scene lifecycle, loader, cameras |
 | [`phaser-arcade-physics`](skills/web-engines/phaser-arcade-physics/SKILL.md) | Arcade Physics: bodies, velocity, colliders/overlap, groups |
 | [`phaser-tactical-grid`](skills/web-engines/phaser-tactical-grid/SKILL.md) | Cell/iso grid drawing, world-to-cell picking, highlights, board camera, path tweening |
+| [`phaser-text-and-hud`](skills/web-engines/phaser-text-and-hud/SKILL.md) | Phaser text, BitmapText, panels/NineSlice, hand-rolled widgets, HUD camera |
 | [`pixijs-rendering`](skills/web-engines/pixijs-rendering/SKILL.md) | PixiJS v8 scene graph: `Application`, `Container`, `Sprite`, events |
 | [`threejs-scene-setup`](skills/web-engines/threejs-scene-setup/SKILL.md) | Three.js scene/camera/renderer/animation-loop, resizing, controls |
 | [`threejs-gltf-loading`](skills/web-engines/threejs-gltf-loading/SKILL.md) | Loading glTF/GLB + skinned animation (`GLTFLoader`/`AnimationMixer`) |
@@ -204,7 +205,7 @@ engine), while disciplines, genres, and workflows are additive on top.
 | [`roblox-studio-workflow`](skills/other-engines/roblox-studio-workflow/SKILL.md) | Explorer-first place editing, structure preservation, multi-context Studio verification |
 | [`roblox-simulator-economy`](skills/other-engines/roblox-simulator-economy/SKILL.md) | Simulator/tycoon/idle economy: cost curves, buy max, rebirths, offline earnings, big-number display, server-owned purchases, paid random item odds (Lune 0.11.0 pacing calculator) |
 
-### Disciplines — 15 ([`skills/disciplines/`](skills/disciplines/))
+### Disciplines — 16 ([`skills/disciplines/`](skills/disciplines/))
 
 Cross-engine concepts that load alongside the detected engine skill.
 
@@ -224,6 +225,7 @@ Cross-engine concepts that load alongside the detected engine skill.
 | [`game-feel`](skills/disciplines/game-feel/SKILL.md) | Juice: screen shake, hit-stop, tweening/easing, squash & stretch, feedback tiers |
 | [`game-ui-ux`](skills/disciplines/game-ui-ux/SKILL.md) | Cross-engine HUD/menus: anchors, resolution scaling, safe areas, focus navigation |
 | [`camera-systems`](skills/disciplines/camera-systems/SKILL.md) | 2D follow/deadzone/look-ahead + bounds, 3D orbit/first-person, screen-shake hook |
+| [`game-content-data`](skills/disciplines/game-content-data/SKILL.md) | Content as data: schemas, stable IDs and refs, effect registry, load-time validation, balance tables, content tests |
 | [`performance-optimization`](skills/disciplines/performance-optimization/SKILL.md) | Profile-first: frame budget, CPU/GPU triage, draw calls, pooling, GC, asset budgets |
 
 ### Genres — 10 ([`skills/genres/`](skills/genres/))
@@ -296,7 +298,7 @@ Here's the shape of a single exchange (illustrative):
 > add a double jump to my player
 
 Detected Godot (project.godot). Loading godot-2d-movement for the controller
-and platformer for jump feel — skipping the other 77 skills.
+and platformer for jump feel — skipping the other 79 skills.
 ```
 
 ```gdscript
@@ -325,7 +327,7 @@ func _physics_process(delta: float) -> void:
 ## Repository layout
 
 ```
-skills/        79 specialized skills, grouped by engine / discipline / genre / workflow
+skills/        81 specialized skills, grouped by engine / discipline / genre / workflow
 router/        the master router skill (+ references/)
 docs/          authoring standard, installation, compatibility
 templates/     SKILL.md template

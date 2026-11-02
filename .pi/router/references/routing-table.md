@@ -63,6 +63,7 @@ a real folder at `skills/<category>/<name>/SKILL.md`. Trigger words (`says:`) an
 | Skill | Pick it when |
 |-------|--------------|
 | `phaser-core` | "Phaser", "Phaser scene", `preload`/`create`/`update`; dep `phaser` |
+| `phaser-text-and-hud` | "Phaser text", `TextStyle`, `BitmapText`, `nineslice`, panel/tooltip/HUD/toolbar, buttons, `cameras.add` HUD camera, `setScrollFactor`, unreadable or blurry text, HUD in Canvas mode |
 | `phaser-tactical-grid` | "grid", "cell", "tile", "isometric/iso board", "screen to cell", "tile hover", "range highlight", "board camera", `add.grid`, `TilemapLayer`, `worldView` in a Phaser project; a tactics/board/puzzle/city grid that needs cell math and picking |
 | `phaser-arcade-physics` | "Arcade Physics", "collider", "overlap", world bounds |
 | `pixijs-rendering` | "PixiJS", "Pixi sprite", "stage", `Container`; dep `pixi.js` |
@@ -105,6 +106,7 @@ a real folder at `skills/<category>/<name>/SKILL.md`. Trigger words (`says:`) an
 | `game-feel` | game feel, juice, screen shake, hit-stop/freeze frame, squash & stretch, knockback, "make it punchy/satisfying" | engine animation/tween (`godot-animation`/`unity-animation`) + `camera-systems` (shake) + `audio-design` |
 | `camera-systems` | camera follow, follow camera, deadzone, look-ahead, camera bounds/limits, third-person/orbit camera, first-person look, Cinemachine, camera jitter | `godot-2d-movement`/`godot-3d-essentials` / Unity Cinemachine 3 / Godot `Camera2D`/`Camera3D` |
 | `game-ui-ux` | HUD, health bar, main/pause/settings menu, UI layout, anchors, UI scaling, aspect ratio, safe area, controller/keyboard menu nav | `godot-ui-control` / Unity UI (UGUI/UI Toolkit) |
+| `game-content-data` | content data, data tables, "make items/enemies/missions data-driven", stat blocks, schema, item database, IDs/references, effect registry, balance tables, validation, content tests | 
 | `performance-optimization` | performance, optimize, low/dropping FPS, frame drops, stutter, lag, frame budget, draw calls, batching, GC spikes, object pooling, profiler | engine profiler (Godot Monitors / Unity Profiler / Unreal `stat unit`) + `physics-tuning` |
 
 ## Genres (`skills/genres/`) — whole-game templates, **compose** engine + disciplines

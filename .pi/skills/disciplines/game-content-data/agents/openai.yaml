@@ -1,0 +1,4 @@
+interface:
+  display_name: "Game Content Data"
+  short_description: "Schemas, IDs, validation and balance tables as data"
+  default_prompt: "Use $game-content-data to model these game tables (units, items, missions) and validate them."
