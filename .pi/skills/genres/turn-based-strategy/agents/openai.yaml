@@ -1,0 +1,4 @@
+interface:
+  display_name: "Turn-Based Strategy"
+  short_description: "Build SRPG grid tactics: phases, ranges, forecast, campaign"
+  default_prompt: "Use $turn-based-strategy to build this tactics game — phases, action points, ranges, combat forecast, enemy phase and campaign layer."

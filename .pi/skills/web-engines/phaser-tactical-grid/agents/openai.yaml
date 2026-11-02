@@ -1,0 +1,4 @@
+interface:
+  display_name: "Phaser Tactical Grid"
+  short_description: "Cell grids, iso boards, picking and board cameras in Phaser 4"
+  default_prompt: "Use $phaser-tactical-grid to add or fix the cell grid, tile picking and range highlights in my Phaser game."
